@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#0a0f1e"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="LI Coach"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.svg"/>
+<title>LinkedIn Comment Coach</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0f1e;color:#e2e8f0;min-height:100vh;overscroll-behavior:none}
+:root{--teal:#0ea5e9;--card:#111827;--card2:#1a2235;--border:#1e2d45;--muted:#64748b;--green:#10b981;--gold:#f59e0b;--purple:#a78bfa}
+
+/* Layout */
+.app{max-width:520px;margin:0 auto;padding:20px 16px 100px}
+
+/* Header */
+.badge{display:inline-block;background:#0ea5e915;border:1px solid #0ea5e940;color:var(--teal);font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:10px}
+h1{font-size:26px;font-weight:800;background:linear-gradient(135deg,#e2e8f0 30%,#0ea5e9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.sub{color:var(--muted);font-size:13px;line-height:1.6}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;background:var(--card);border-radius:12px;padding:4px;margin:20px 0 18px}
+.tab{flex:1;padding:10px 0;border-radius:9px;border:none;background:transparent;color:var(--muted);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}
+.tab.active{background:var(--card2);color:#e2e8f0}
+
+/* Panel */
+.panel{display:none}.panel.active{display:block}
+
+/* Card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px}
+.card-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--teal);flex-shrink:0}
+
+/* Mode toggle */
+.mode-bar{display:flex;gap:8px;margin-bottom:14px}
+.mode-btn{flex:1;padding:10px 0;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.mode-btn.active{border-color:var(--teal);background:#0ea5e915;color:var(--teal)}
+
+/* Textarea / Input / Select */
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+textarea,select,input[type=text]{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:10px;color:#e2e8f0;font-family:inherit;font-size:15px;padding:12px 13px;outline:none;-webkit-appearance:none;appearance:none}
+textarea{resize:vertical;min-height:110px;line-height:1.6}
+.char-count{font-size:11px;color:var(--muted);text-align:right;margin-top:4px}
+.field{margin-bottom:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+
+/* Upload button — real label trick */
+.upload-label{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:100%;padding:28px 20px;
+  background:var(--card2);border:2px dashed var(--border);border-radius:12px;
+  cursor:pointer;text-align:center;transition:border-color .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.upload-label:active{border-color:var(--teal);background:#0ea5e908}
+.upload-label .up-icon{font-size:32px;margin-bottom:8px}
+.upload-label .up-title{font-weight:600;color:#e2e8f0;font-size:15px;margin-bottom:4px}
+.upload-label .up-sub{font-size:12px;color:var(--muted)}
+#fileInput{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+/* Preview */
+.preview-box{margin-bottom:12px}
+.preview-box img{width:100%;border-radius:10px;border:1px solid var(--border);max-height:240px;object-fit:contain;background:#000;display:block}
+.preview-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.img-ok{font-size:12px;color:var(--green)}
+.change-btn{font-size:12px;padding:5px 12px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-family:inherit}
+
+/* Generate button */
+.gen-btn{width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#2563eb,#0ea5e9);color:white;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px #2563eb30;margin-top:4px;transition:opacity .2s}
+.gen-btn:disabled{background:#1a2235;color:var(--muted);box-shadow:none;cursor:not-allowed}
+.gen-btn:active:not(:disabled){opacity:.85}
+
+/* Loading */
+.loading{display:none;text-align:center;padding:28px;color:var(--muted);font-size:13px}
+.loading.show{display:block}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Error */
+.error-box{background:#ef444415;border:1px solid #ef444430;border-radius:10px;padding:12px 14px;color:#fca5a5;font-size:13px;margin-top:10px;display:none}
+.error-box.show{display:block}
+
+/* Results */
+.results{display:none;margin-top:16px}.results.show{display:block}
+.detected{background:#0ea5e910;border:1px solid #0ea5e925;border-radius:10px;padding:10px 14px;font-size:12px;color:#7dd3fc;line-height:1.6;margin-bottom:14px}
+.detected strong{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--teal);display:block;margin-bottom:4px}
+
+/* Comment blocks */
+.c-block{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px}
+.c-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.c-label.hook{color:var(--gold)}.c-label.value{color:var(--green)}.c-label.connect{color:var(--purple)}
+.c-text{font-size:15px;line-height:1.75;color:#e2e8f0;white-space:pre-wrap;margin-bottom:12px}
+.copy-btn{font-size:13px;padding:7px 16px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .2s}
+.copy-btn.copied{border-color:var(--green);color:var(--green)}
+
+/* Tip */
+.tip-box{background:#10b98110;border:1px solid #10b98125;border-radius:10px;padding:12px 14px;font-size:13px;color:#6ee7b7;line-height:1.6;margin-top:4px}
+
+.regen-btn{width:100%;padding:11px;border-radius:10px;border:1px solid var(--border);background:var(--card2);color:#e2e8f0;font-family:inherit;font-size:13px;cursor:pointer;margin-top:8px}
+
+/* Guide */
+.g-item{border-left:2px solid var(--border);padding:9px 14px;margin-bottom:9px;border-radius:0 8px 8px 0;background:var(--card2)}
+.g-title{font-weight:600;font-size:13px;margin-bottom:3px}
+.g-desc{font-size:12px;color:var(--muted);line-height:1.5}
+.tip-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tip-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px}
+.ti{font-size:18px;margin-bottom:5px}.tt{font-weight:600;font-size:13px;margin-bottom:3px}.td{font-size:12px;color:var(--muted);line-height:1.5}
+
+/* Install banner */
+.install-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:#111827;border-top:1px solid var(--border);padding:12px 16px;z-index:100;align-items:center;gap:12px}
+.install-bar.show{display:flex}
+.install-bar p{flex:1;font-size:13px;color:#e2e8f0;line-height:1.4}
+.install-bar p span{color:var(--teal);font-weight:600}
+.install-btn-bar{padding:9px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,#2563eb,#0ea5e9);color:white;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.dismiss-btn{padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:13px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div style="text-align:center;margin-bottom:24px">
+    <div class="badge">⚡ AI-Powered</div>
+    <h1>LinkedIn Comment Coach</h1>
+    <p class="sub">Paste a post or upload a screenshot — get 3 human-sounding comments instantly.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('gen',this)">Comment Generator</button>
+    <button class="tab" onclick="switchTab('guide',this)">Strategy Guide</button>
+  </div>
+
+  <!-- GENERATOR -->
+  <div class="panel active" id="panel-gen">
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Post Input</div>
+
+      <div class="mode-bar">
+        <button class="mode-btn active" id="modeTextBtn" onclick="switchMode('text')">✏️ Paste Text</button>
+        <button class="mode-btn" id="modeImgBtn" onclick="switchMode('image')">📸 Screenshot</button>
+      </div>
+
+      <!-- TEXT MODE -->
+      <div id="textMode">
+        <div class="field">
+          <label>Paste the LinkedIn post here</label>
+          <textarea id="postText" placeholder="Paste the full post text here..." oninput="updateChar()"></textarea>
+          <div class="char-count" id="charCount">0 characters</div>
+        </div>
+      </div>
+
+      <!-- IMAGE MODE -->
+      <div id="imgMode" style="display:none">
+        <!-- KEY: using <label for="fileInput"> — this is the most reliable mobile upload method -->
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFile(event)"/>
+
+        <div id="uploadState">
+          <label for="fileInput" class="upload-label">
+            <div class="up-icon">📁</div>
+            <div class="up-title">Tap to choose screenshot</div>
+            <div class="up-sub">Opens your camera roll or files</div>
+          </label>
+        </div>
+
+        <div id="previewState" style="display:none" class="preview-box">
+          <img id="previewImg" src="" alt="preview"/>
+          <div class="preview-row">
+            <span class="img-ok">✅ Screenshot ready</span>
+            <label for="fileInput" class="change-btn" style="cursor:pointer">Change</label>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:12px">
+          <label>Extra context (optional)</label>
+          <textarea id="extraText" placeholder="Any extra notes about this post..." style="min-height:60px"></textarea>
+        </div>
+      </div>
+
+      <!-- Options -->
+      <div class="row2">
+        <div>
+          <label>Post Type</label>
+          <select id="postType">
+            <option value="auto">Auto-detect</option>
+            <option value="achievement">Achievement</option>
+            <option value="insight">Opinion/Insight</option>
+            <option value="story">Personal Story</option>
+            <option value="tips">Tips/How-To</option>
+            <option value="job">Hiring Post</option>
+            <option value="question">Question/Poll</option>
+            <option value="news">News/Trend</option>
+            <option value="intro">Introduction</option>
+          </select>
+        </div>
+        <div>
+          <label>Your Goal</label>
+          <select id="goal">
+            <option value="connect">🤝 Build Connections</option>
+            <option value="authority">🎓 Show Expertise</option>
+            <option value="visibility">👁️ Get Visibility</option>
+            <option value="job">💼 Land a Job</option>
+            <option value="client">💰 Attract Clients</option>
+            <option value="friend">😊 Be Genuine</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Your Background</label>
+        <input type="text" id="role" value="CS Student, Cisco Networking" placeholder="e.g. CS Student, Networking"/>
+      </div>
+    </div>
+
+    <button class="gen-btn" id="genBtn" onclick="generate()">✨ Generate Smart Comments</button>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      Analyzing post and crafting comments...
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+
+    <div class="results" id="results">
+      <div class="detected" id="detectedBox" style="display:none">
+        <strong>📋 Post Detected As</strong>
+        <span id="detectedText"></span>
+      </div>
+
+      <div class="c-block">
+        <div class="c-label hook">🪝 Hook — Starts a Conversation</div>
+        <div class="c-text" id="c1"></div>
+        <button class="copy-btn" onclick="doCopy('c1',this)">Copy</button>
+      </div>
+      <div class="c-block">
+        <div class="c-label value">💡 Value — Shows Your Knowledge</div>
+        <div class="c-text" id="c2"></div>
+        <button class="copy-btn" onclick="doCopy('c2',this)">Copy</button>
+      </div>
+      <div class="c-block">
+        <div class="c-label connect">🤝 Connect — Feels Genuinely Human</div>
+        <div class="c-text" id="c3"></div>
+        <button class="copy-btn" onclick="doCopy('c3',this)">Copy</button>
+      </div>
+
+      <div class="tip-box" id="tipBox"></div>
+      <button class="regen-btn" onclick="generate()">🔄 Regenerate Comments</button>
+    </div>
+
+  </div>
+
+  <!-- GUIDE -->
+  <div class="panel" id="panel-guide">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Do's & Don'ts</div>
+      <div class="g-item"><div class="g-title">✅ Add something new</div><div class="g-desc">Share a related experience or insight. Comments that extend the conversation get the most replies.</div></div>
+      <div class="g-item"><div class="g-title">✅ End with a genuine question</div><div class="g-desc">This triggers a reply from the author — LinkedIn boosts the post and you get noticed.</div></div>
+      <div class="g-item"><div class="g-title">✅ Comment in the first 30–60 mins</div><div class="g-desc">Early comments get the most visibility. Check LinkedIn 2× daily and jump on fresh posts fast.</div></div>
+      <div class="g-item"><div class="g-title">❌ Never say "Great post!"</div><div class="g-desc">Adds zero value. Signals you didn't read it. Gets ignored 100% of the time.</div></div>
+      <div class="g-item"><div class="g-title">❌ Don't self-promote</div><div class="g-desc">Never drop your CV or services unless asked. Kills the connection on the spot.</div></div>
+      <div class="g-item"><div class="g-title">❌ Don't sound like a press release</div><div class="g-desc">If it sounds polished and formal, rewrite it. Real beats professional on LinkedIn.</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Comment by Post Type</div>
+      <div class="tip-grid">
+        <div class="tip-card"><div class="ti">🏆</div><div class="tt">Achievement</div><div class="td">Be specific. Ask how they got there, not just "congrats."</div></div>
+        <div class="tip-card"><div class="ti">💼</div><div class="tt">Hiring Post</div><div class="td">Comment professionally first, then send a personalized connection request.</div></div>
+        <div class="tip-card"><div class="ti">💡</div><div class="tt">Opinion/Insight</div><div class="td">Agree and add your angle, or push back. Never be neutral.</div></div>
+        <div class="tip-card"><div class="ti">📖</div><div class="tt">Personal Story</div><div class="td">"I had a similar moment..." is the fastest way to build real connection.</div></div>
+        <div class="tip-card"><div class="ti">❓</div><div class="tt">Question/Poll</div><div class="td">Give a real answer with a reason — 10× more valuable than just clicking.</div></div>
+        <div class="tip-card"><div class="ti">📰</div><div class="tt">News/Trend</div><div class="td">Share your take and connect it to your own field or experience.</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Connection Strategy</div>
+      <div class="g-item"><div class="g-title">Step 1 — Comment first, connect second</div><div class="g-desc">Your comment creates context — they'll recognize your name when the request arrives.</div></div>
+      <div class="g-item"><div class="g-title">Step 2 — Personalize the connection note</div><div class="g-desc">"Hi [Name], I commented on your post about [topic] — would love to connect."</div></div>
+      <div class="g-item"><div class="g-title">Step 3 — Engage 3× before DM'ing</div><div class="g-desc">Comment on 2–3 posts over a week. By then you're a familiar face, not a stranger.</div></div>
+      <div class="g-item"><div class="g-title">Step 4 — Target 10 comments a day</div><div class="g-desc">10 genuine comments/day = ~70 touchpoints/week = fast network growth.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Install banner -->
+<div class="install-bar" id="installBar">
+  <p>Install as an app — <span>tap Add to Home Screen</span> for offline access</p>
+  <button class="install-btn-bar" id="installBtn">Install</button>
+  <button class="dismiss-btn" onclick="document.getElementById('installBar').classList.remove('show')">✕</button>
+</div>
+
+<script>
+// ── State ──
+let imgB64 = null;
+let imgMime = null;
+let currentMode = 'text';
+let deferredPrompt = null;
+
+// ── Tabs ──
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ── Mode ──
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('modeTextBtn').classList.toggle('active', mode === 'text');
+  document.getElementById('modeImgBtn').classList.toggle('active', mode === 'image');
+  document.getElementById('textMode').style.display = mode === 'text' ? 'block' : 'none';
+  document.getElementById('imgMode').style.display = mode === 'image' ? 'block' : 'none';
+}
+
+// ── File handling ──
+function handleFile(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  imgMime = file.type;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const full = ev.target.result;
+    imgB64 = full.split(',')[1];
+    document.getElementById('previewImg').src = full;
+    document.getElementById('uploadState').style.display = 'none';
+    document.getElementById('previewState').style.display = 'block';
+    clearResults();
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Char count ──
+function updateChar() {
+  const v = document.getElementById('postText').value;
+  document.getElementById('charCount').textContent = v.length + ' characters';
+}
+
+// ── Clear ──
+function clearResults() {
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('errorBox').classList.remove('show');
+}
+
+// ── Generate ──
+async function generate() {
+  const postText = document.getElementById('postText').value.trim();
+  const extraText = document.getElementById('extraText') ? document.getElementById('extraText').value.trim() : '';
+  const hasText = postText.length > 0;
+  const hasImg = !!imgB64;
+
+  if (currentMode === 'text' && !hasText) {
+    showError('Please paste the post text first.');
+    return;
+  }
+  if (currentMode === 'image' && !hasImg) {
+    showError('Please upload a screenshot first.');
+    return;
+  }
+
+  const goal = document.getElementById('goal').value;
+  const postType = document.getElementById('postType').value;
+  const role = document.getElementById('role').value || 'Professional';
+
+  const goalMap = {
+    connect: 'build a genuine connection with the author',
+    authority: 'show expertise and knowledge',
+    visibility: 'get noticed by the author and their audience',
+    job: 'land a job or internship',
+    client: 'attract potential clients',
+    friend: 'be genuine and make a real friend'
+  };
+
+  const combinedText = hasText ? postText : (extraText || '');
+
+  const prompt = `You are helping someone write LinkedIn comments that sound like a real human — NOT like AI.
+
+User background: ${role}
+Post type hint: ${postType === 'auto' ? 'detect automatically' : postType}
+Goal: ${goalMap[goal]}
+
+${combinedText ? `LINKEDIN POST TEXT:\n"""\n${combinedText}\n"""` : 'Read the LinkedIn post from the attached screenshot.'}
+
+Generate 3 comments. Return ONLY valid JSON, no markdown fences:
+{
+  "postSummary": "One sentence: what this post is about",
+  "c1": "Hook comment — casual, ends with a real natural question. Max 4 lines.",
+  "c2": "Value comment — adds insight from user's background (${role}). Real talk, not a speech. Max 4 lines.",
+  "c3": "Connect comment — personal, relatable, like texting a thought to a friend. Max 4 lines.",
+  "tip": "One sentence: best follow-up action after commenting on this specific post"
+}
+
+STRICT TONE RULES:
+- No 'This resonates deeply', 'Truly inspiring', 'I couldn't agree more'
+- No filler: 'honestly', 'genuinely', 'certainly', 'absolutely'
+- Short sentences. Contractions: I'm, it's, don't, wasn't
+- Sounds like typed on a phone, not written in Word
+- Hook comment MUST end with a casual question`;
+
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('genBtn').disabled = true;
+  document.getElementById('errorBox').classList.remove('show');
+
+  try {
+    const contentArr = hasImg
+      ? [
+          { type: 'image', source: { type: 'base64', media_type: imgMime, data: imgB64 } },
+          { type: 'text', text: prompt }
+        ]
+      : [{ type: 'text', text: prompt }];
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: contentArr }]
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const raw = data.content.map(i => i.text || '').join('').replace(/```json|```/g, '').trim();
+    const p = JSON.parse(raw);
+
+    if (p.postSummary) {
+      document.getElementById('detectedText').textContent = p.postSummary;
+      document.getElementById('detectedBox').style.display = 'block';
+    }
+    document.getElementById('c1').textContent = p.c1;
+    document.getElementById('c2').textContent = p.c2;
+    document.getElementById('c3').textContent = p.c3;
+    document.getElementById('tipBox').innerHTML = '<strong style="color:#10b981">💡 Next move: </strong>' + p.tip;
+    document.getElementById('results').classList.add('show');
+
+    // Scroll to results
+    setTimeout(() => document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+
+  } catch (err) {
+    showError('Something went wrong. Check your input and try again.');
+    console.error(err);
+  } finally {
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('genBtn').disabled = false;
+  }
+}
+
+// ── Copy ──
+function doCopy(id, btn) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ── Error ──
+function showError(msg) {
+  const b = document.getElementById('errorBox');
+  b.textContent = msg;
+  b.classList.add('show');
+}
+
+// ── PWA Install ──
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBar').classList.add('show');
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBar').classList.remove('show');
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBar').classList.remove('show');
+});
+
+// ── Service Worker ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(console.error);
+}
+</script>
+</body>
+</html>
